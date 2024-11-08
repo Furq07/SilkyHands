@@ -4,8 +4,6 @@
     "package": "xyz.tuxinal.silkyHands.mixin",
     "compatibilityLevel": "JAVA_17",
     "mixins": ["PlayerEntityMixin", "BlockMixin"],
-    "client": [],
-    "server": [],
     "injectors": {
         "defaultRequire": 1
     }

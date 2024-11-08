@@ -5,10 +5,11 @@
     "name": "Silky Hands",
     "description": "Make blocks drop the same item",
     "authors": [
+        "Furq",
         "Tuxinal"
     ],
     "contact": {
-        "sources": "https://github.com/tuxinal/silky-hands"
+        "sources": "https://github.com/Furq07/SilkyHands"
     },
     "license": "MIT",
     "icon": "assets/silky-hands/icon.png",

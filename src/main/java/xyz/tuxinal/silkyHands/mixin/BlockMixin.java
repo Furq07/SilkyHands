@@ -1,38 +1,37 @@
 package xyz.tuxinal.silkyHands.mixin;
 
-import java.util.List;
-import java.util.stream.Stream;
-
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Registry;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.loot.LootTable;
+import net.minecraft.world.level.storage.loot.predicates.LootItemConditions;
 import org.apache.commons.lang3.ArrayUtils;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
-
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.storage.loot.predicates.LootItemConditions;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.server.level.ServerLevel;
 import xyz.tuxinal.silkyHands.utils.ConfigParser;
+
+import java.util.List;
 
 @Mixin(Block.class)
 public class BlockMixin {
     @Redirect(method = "dropResources(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/entity/BlockEntity;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/item/ItemStack;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/Block;getDrops(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/entity/BlockEntity;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/item/ItemStack;)Ljava/util/List;"))
-    private static List<ItemStack> inject(BlockState blockState, ServerLevel serverLevel,
-            BlockPos blockPos,
-            @Nullable BlockEntity blockEntity, @Nullable Entity entity, ItemStack itemStack) {
+    private static List<ItemStack> inject(BlockState blockState, ServerLevel serverLevel, BlockPos blockPos, @Nullable BlockEntity blockEntity, @Nullable Entity entity, ItemStack itemStack) {
         var originalDrops = Block.getDrops(blockState, serverLevel, blockPos, blockEntity, entity,
                 itemStack);
-        if (!(entity instanceof Player)) {
+        if (!(entity instanceof Player player)) {
             return originalDrops;
         }
-        Player player = (Player) entity;
         if (!player.getTags().contains(ConfigParser.getTag())) {
             return originalDrops;
         }
@@ -47,14 +46,15 @@ public class BlockMixin {
             return originalDrops;
         }
 
-        // really hacky solution to multiblocks having dropping multiple times when
-        // broken
-        // as far as i can tell all vanilla multiblocks work fine with this
         var block = blockState.getBlock();
         var lootResource = block.getLootTable();
-        var lootTable = serverLevel.getServer().getLootData().getLootTable(lootResource);
-        if (Stream.of(lootTable.pools[0].entries[0].conditions)
-                .anyMatch(condition -> condition.getType() == LootItemConditions.BLOCK_STATE_PROPERTY)) {
+        RegistryAccess registryAccess = serverLevel.getServer().registryAccess();
+        Registry<LootTable> lootTables = registryAccess.registryOrThrow(Registries.LOOT_TABLE);
+        var lootTable = lootTables.get(lootResource);
+        assert lootTable != null;
+        if (!lootTable.pools.isEmpty() && !lootTable.pools.get(0).entries.isEmpty() &&
+                lootTable.pools.get(0).conditions.stream()
+                        .anyMatch(condition -> condition.getType() == LootItemConditions.BLOCK_STATE_PROPERTY)) {
             return originalDrops;
         }
 
