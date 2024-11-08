@@ -15,14 +15,9 @@ public class PlayerEntityMixin {
     @Inject(method = "hasCorrectToolForDrops(Lnet/minecraft/world/level/block/state/BlockState;)Z", at = @At("RETURN"), cancellable = true)
     private void injected(BlockState blockState, CallbackInfoReturnable<Boolean> ci) {
         Player player = ((Player) (Object) this);
-        if (!player.getTags().contains(ConfigParser.getTag())) {
-            return;
-        }
-        if (!player.getMainHandItem().isEmpty()) {
-            return;
-        }
-        if (ArrayUtils.contains(ConfigParser.getIgnoredBlocks(),
-                BuiltInRegistries.BLOCK.getKey(blockState.getBlock()))) {
+        if (!player.getTags().contains(ConfigParser.getTag()) || 
+            !player.getMainHandItem().isEmpty() || 
+            ArrayUtils.contains(ConfigParser.getIgnoredBlocks(), BuiltInRegistries.BLOCK.getKey(blockState.getBlock()))) {
             return;
         }
         ci.setReturnValue(true);
